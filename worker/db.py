@@ -12,6 +12,7 @@ All statements are parameterized; no job value is ever formatted into SQL.
 
 from __future__ import annotations
 
+import json
 import os
 import sqlite3
 from collections.abc import Mapping
@@ -92,19 +93,42 @@ def init_schema(conn: sqlite3.Connection) -> None:
     conn.execute(SCHEMA_DDL)
 
 
+_NOW = "strftime('%Y-%m-%dT%H:%M:%SZ', 'now')"
+MAX_ERROR_LENGTH = 200
+
+
 def claim_next_job(conn: sqlite3.Connection) -> dict[str, Any] | None:
     """Atomically move the oldest pending job to 'running' and return it.
 
-    Returns the claimed job as a dict, or ``None`` when no job is pending.
+    Returns the claimed job as a dict, or ``None`` when no job is pending. A single
+    ``UPDATE ... RETURNING`` guarded by ``status = 'pending'`` makes the claim atomic:
+    two workers can never both claim the same row.
     """
-    return None
+    row = conn.execute(
+        "UPDATE jobs SET status = 'running', updated_at = " + _NOW + " "
+        "WHERE id = (SELECT id FROM jobs WHERE status = 'pending' "
+        "ORDER BY created_at ASC, id ASC LIMIT 1) AND status = 'pending' "
+        "RETURNING id, text, analysis, status, result, error, created_at, updated_at"
+    ).fetchone()
+    return dict(row) if row is not None else None
 
 
 def finish_job(conn: sqlite3.Connection, job_id: int, result: Any) -> None:
     """Store ``result`` (a JSON value) for the job and set its status to 'done'."""
-    return None
+    conn.execute(
+        "UPDATE jobs SET status = 'done', result = ?, error = NULL, updated_at = "
+        + _NOW
+        + " WHERE id = ?",
+        (json.dumps(result), job_id),
+    )
 
 
 def fail_job(conn: sqlite3.Connection, job_id: int, error: str) -> None:
     """Store the short ``error`` message for the job and set its status to 'failed'."""
-    return None
+    message = (error or "").strip().splitlines()[0][:MAX_ERROR_LENGTH] if error else ""
+    conn.execute(
+        "UPDATE jobs SET status = 'failed', error = ?, result = NULL, updated_at = "
+        + _NOW
+        + " WHERE id = ?",
+        (message or "analysis failed", job_id),
+    )
