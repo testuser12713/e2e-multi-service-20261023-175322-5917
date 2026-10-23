@@ -6,16 +6,98 @@
       "dir": "frontend",
       "stack": "web-vite",
       "kind": "server",
-      "install": [["npm", "ci"]],
-      "build": [["npm", "run", "build"]],
-      "test": [["npx", "vitest", "run"]],
-      "start": ["npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "${PORT}", "--strictPort"],
+      "install": [
+        [
+          "npm",
+          "ci"
+        ]
+      ],
+      "build": [
+        [
+          "npm",
+          "run",
+          "build"
+        ]
+      ],
+      "test": [
+        [
+          "npx",
+          "vitest",
+          "run"
+        ]
+      ],
+      "start": [
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "${PORT}",
+        "--strictPort"
+      ],
       "port": 5173,
-      "health": { "path": "/", "expect_status": [200] },
+      "health": {
+        "path": "/",
+        "expect_status": [
+          200
+        ]
+      },
       "ready_timeout_s": 60,
       "env": {
-        "VITE_API_BASE_URL": { "dev": "${service:api.origin}" }
+        "VITE_API_BASE_URL": {
+          "dev": "${service:api.origin}"
+        }
       }
+    },
+    {
+      "name": "api",
+      "dir": "backend",
+      "stack": "python",
+      "kind": "server",
+      "install": [
+        [
+          "${python}",
+          "-m",
+          "pip",
+          "install",
+          "-q",
+          "-r",
+          "requirements.txt"
+        ]
+      ],
+      "start": [
+        "${python}",
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "${PORT}"
+      ],
+      "port": 8000,
+      "port_env": "PORT",
+      "health": {
+        "path": "/health",
+        "expect_status": [
+          200
+        ]
+      },
+      "env": {
+        "JOBS_DB_PATH": {
+          "dev": "../data/jobs.db"
+        },
+        "CORS_ORIGINS": {
+          "dev": "${service:web.origin}"
+        }
+      },
+      "test": [
+        [
+          "${python}",
+          "-m",
+          "pytest"
+        ]
+      ]
     }
   ]
 }
