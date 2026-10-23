@@ -35,6 +35,7 @@ frontend/           Web-Dashboard (Vite/React/TypeScript)
   src/api.ts        API-Client und Typen
   src/App.tsx       Seitenaufbau und Polling
   src/components/   Formular und Job-Liste
+dev.py              startet alle drei Dienste mit einem Befehl
 RUN.json            maschinenlesbarer Startvertrag aller Dienste
 DESIGN.md           verbindliches Design (Farben, Abstände, Komponenten)
 ```
@@ -82,6 +83,20 @@ WAL-Modus mit Busy-Timeout, damit API und Worker gleichzeitig ohne
 „database is locked“ zugreifen können.
 
 ## Starten in der Entwicklung
+
+### Ein Befehl für alles
+
+Nach der Installation startet ein Befehl aus dem Wurzelverzeichnis alle drei Dienste
+(api, worker, web) gemeinsam:
+
+```bash
+python dev.py
+```
+
+Danach `http://localhost:5173` im Browser öffnen; die API läuft auf Port 8000. Beide
+nutzen dieselbe Datenbank `data/jobs.db` im Wurzelverzeichnis, CORS und API-Adresse sind
+bereits verdrahtet. Strg+C beendet alle drei Dienste. Andere Ports lassen sich über
+`API_PORT` und `WEB_PORT` setzen, die Datenbank über `JOBS_DB_PATH`.
 
 ### Jeder Dienst einzeln
 
