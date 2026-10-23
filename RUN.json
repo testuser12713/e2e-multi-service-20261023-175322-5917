@@ -98,6 +98,45 @@
           "pytest"
         ]
       ]
+    },
+    {
+      "name": "worker",
+      "dir": ".",
+      "stack": "python",
+      "kind": "worker",
+      "install": [
+        [
+          "${python}",
+          "-m",
+          "pip",
+          "install",
+          "-r",
+          "worker/requirements.txt"
+        ]
+      ],
+      "start": [
+        "${python}",
+        "-m",
+        "worker"
+      ],
+      "test": [
+        [
+          "${python}",
+          "-m",
+          "pytest",
+          "worker"
+        ]
+      ],
+      "env": {
+        "JOBS_DB_PATH": {
+          "dev": "backend/data/jobs.db",
+          "not_secret": true,
+          "why": "a relative file path to the shared SQLite database (the API's default data/jobs.db, seen from the repo root); it grants no access to anything"
+        },
+        "WORKER_POLL_INTERVAL_SECONDS": {
+          "dev": "2"
+        }
+      }
     }
   ]
 }
